@@ -2,6 +2,10 @@
 
 SPA vanilla (HTML + CSS + JS puro) que consume la SeeleScans API. Sin frameworks, sin bundler. ES modules nativos.
 
+LINK AL REPO DE LA API
+
+https://github.com/SrCharlied/SeeleScans-API
+
 ## 🏆 Challenges implementados
 
 Tabla de cumplimiento contra la consigna desde el lado cliente. Los puntos puramente backend están en `SeeleScans-API/README.md`.
