@@ -184,3 +184,11 @@ Cambiar ahí si la API corre en otro host/puerto.
 - **CORS** → `BASE_URL` debe coincidir con el `Access-Control-Allow-Origin` del backend (la API responde `*`, así que cualquier origen funciona)
 - **Imágenes rotas** → fallback SVG aparece automático; no rompe layout
 - **`bunx serve` no instalado** → `npm i -g serve` o usar `python -m http.server`
+
+## ✍️ Reflexión
+
+Para el caso del cliente y el frontend pues diría lo mismo que dije en el backend, JS no es mi lenguaje favorito y como que siento rechazo por el mismo, es algo raro ya que tengo yo y cuando es algo de JS me bloqueo.
+
+Como tal pues estuvo curioso usar JS puro, lo de generar CSVs así nativo que lo tenga de por sí está god y ya… creo que hubiese sido interesante poder usar un framework también para el frontend pero igual me pareció entretenido.
+
+Elegí usar un SPA porque la verdad no me quería andar complicando con más pags aunque no iba a estar tan complicado pero aja, eso sí, considero que quedó bastante bonito. Soy fan de un personaje que se llama Seele de un juego y casi todo lo tengo relacionado a ella; tomarme mi tiempo para hacer el logo y luego decidir la paleta de colores y la tipografía fue divertido, aunque había tipografías que me gustaban más pero lastimosamente eran de paga Dx
