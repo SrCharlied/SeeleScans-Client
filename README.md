@@ -2,6 +2,20 @@
 
 SPA vanilla (HTML + CSS + JS puro) que consume la SeeleScans API. Sin frameworks, sin bundler. ES modules nativos.
 
+## 🏆 Challenges implementados
+
+Tabla de cumplimiento contra la consigna desde el lado cliente. Los puntos puramente backend están en `SeeleScans-API/README.md`.
+
+| Challenge | Pts | Implementación en el cliente |
+| --- | :---: | --- |
+| ✅ CSV export | 20 | Botón **CSV** en el toolbar del Home → genera CSV de la página actual con BOM UTF-8, escape de comas/quotes/saltos. Filename `seele-mangas-pagina-N.csv`. Implementado en `js/ui.js` (`mangasToCsv`, `downloadCsv`). |
+| ✅ Rating system (UI) | 30 | Estrellas readonly (avg + count) en cada card del Home; bloque interactivo en el detalle con avg gigante, 5 botones de estrella con hover-preview, distribución animada por estrella, botón "quitar". Identidad por `client_id` UUID v4 persistido en `localStorage`. Acciones POST/DELETE con feedback de toast. |
+| ✅ Upload imágenes (UI) | 30 | Componente `coverField` en el form: preview tipo cover en aspect 2:3, botón "Subir archivo" con validación cliente (mime jpg/png/webp + tamaño ≤ 1 MB) usando `FileReader` para preview, input URL como alternativa, botón "Quitar imagen". El `handleFormSubmit` sube a `/upload/cover` antes del POST/PUT del manga y reemplaza `cover_url` con la URL devuelta. |
+| ✅ HTTP codes correctos | — | El cliente respeta los códigos del backend: lee `{ error: "..." }` en respuestas no-OK y muestra toast tipado (info/success/error/warning). El `apiFetch` parsea `204` como `null`. |
+| ✅ Validación cliente | — | Antes de POST/PUT, valida slug (`^[a-z0-9-]+$`), título required, status enum, año entre 1900-2100, URL parseable. Errores inline por campo + toast warning. No reemplaza la validación zod del servidor; es UX temprana. |
+| ✅ Paginación / búsqueda / orden (UI) | — | Toolbar con search debounced (320 ms + AbortController para cancelar requests anteriores), sort dropdown, order toggle ASC/DESC, limit 5/10/20/40, paginación prev/next con indicador "Página X / Y". |
+| ❌ Excel export | 30 | (Pendiente — solo CSV implementado.) |
+
 ## Levantar el cliente
 
 Asegurate primero que la API está corriendo en `http://localhost:3000`:
