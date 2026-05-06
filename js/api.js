@@ -96,6 +96,13 @@ export const getPages = (chapterId, { signal } = {}) =>
 // ---- Tags ----
 export const getTags = ({ signal } = {}) => apiFetch('/tags', { signal });
 
+// ---- Uploads ----
+export const uploadCover = (file) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return apiFetch('/upload/cover', { method: 'POST', body: fd });
+};
+
 export const api = {
   getMangas,
   getManga,
@@ -106,4 +113,5 @@ export const api = {
   getChapter,
   getPages,
   getTags,
+  uploadCover,
 };

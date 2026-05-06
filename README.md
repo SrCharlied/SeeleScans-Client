@@ -91,6 +91,7 @@ Las vistas se acoplan vía atributos `data-action` en el DOM. `app.js` escucha e
 | Borrar | Confirm modal antes de DELETE; redirige a home tras éxito |
 | Validación cliente | Slug regex, título required, status enum, año 1900–2100, URL válida |
 | CSV export | Página actual → CSV con BOM UTF-8, escape de comas/quotes/saltos |
+| Cover upload | Input file (≤1 MB, jpg/png/webp) con preview; sube a la API antes del POST/PUT |
 | Errores | Toast bottom-right con mensaje del backend (`{ error: "..." }`) |
 | Loading | Overlay con spinner orbital (4 puntos) durante fetches |
 | Confirm modal | Modal centrado, Esc cierra, Enter confirma |

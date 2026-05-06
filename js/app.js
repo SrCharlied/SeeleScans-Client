@@ -359,6 +359,10 @@ async function onMainClick(e) {
       e.preventDefault();
       goHome();
       break;
+    case 'cover-clear':
+      e.preventDefault();
+      handleCoverClear(target);
+      break;
   }
 }
 
@@ -383,6 +387,8 @@ function onMainInput(e) {
   if (t.dataset?.action === 'search-input') {
     state.filters.q = t.value || '';
     debouncedSearch();
+  } else if (t.dataset?.action === 'cover-url') {
+    updateCoverPreview(t.closest('.cover-field'), t.value || '');
   }
 }
 
@@ -396,6 +402,8 @@ async function onMainChange(e) {
     state.filters.limit = parseInt(t.value, 10) || 10;
     state.filters.page = 1;
     await loadHome();
+  } else if (t.dataset?.action === 'cover-file') {
+    handleCoverFileChange(t);
   }
 }
 
@@ -445,6 +453,32 @@ async function handleFormSubmit(form) {
   const id = form.dataset.id;
   const payload = readFormPayload(form);
 
+  const fileInput = form.querySelector('[data-action="cover-file"]');
+  const file = fileInput?.files?.[0] || null;
+
+  // upload cover first (if a file was chosen) so we have its URL before submitting manga
+  if (file) {
+    if (!validateCoverFile(file, { silent: false })) {
+      return;
+    }
+    showLoading();
+    try {
+      const res = await api.uploadCover(file);
+      if (res?.url) {
+        payload.cover_url = res.url;
+        // reflect new URL in the input so the user sees what got saved
+        const urlInput = form.querySelector('[data-action="cover-url"]');
+        if (urlInput) urlInput.value = res.url;
+      }
+    } catch (err) {
+      hideLoading();
+      showToast(err.message || 'No se pudo subir la imagen.', 'error');
+      return;
+    } finally {
+      hideLoading();
+    }
+  }
+
   // strip empty optional fields for cleanness
   const clean = {};
   for (const [k, v] of Object.entries(payload)) {
@@ -477,6 +511,75 @@ async function handleFormSubmit(form) {
   } finally {
     hideLoading();
   }
+}
+
+// ---------- Cover field helpers ----------
+const MAX_COVER_BYTES = 1 * 1024 * 1024;
+const ALLOWED_COVER_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function validateCoverFile(file, { silent = false } = {}) {
+  if (!ALLOWED_COVER_MIMES.includes(file.type)) {
+    if (!silent) showToast(`Tipo no soportado: ${file.type || 'desconocido'}. Usá jpg, png o webp.`, 'error');
+    return false;
+  }
+  if (file.size > MAX_COVER_BYTES) {
+    if (!silent) showToast(`Imagen muy grande (${formatBytes(file.size)}). Máximo 1 MB.`, 'error');
+    return false;
+  }
+  return true;
+}
+
+function handleCoverFileChange(input) {
+  const wrapper = input.closest('.cover-field');
+  const file = input.files?.[0];
+  if (!file) return;
+
+  if (!validateCoverFile(file)) {
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    updateCoverPreview(wrapper, reader.result);
+  };
+  reader.readAsDataURL(file);
+
+  const meta = wrapper?.querySelector('[data-role="cover-file-meta"]');
+  if (meta) meta.textContent = `${file.name} · ${formatBytes(file.size)}`;
+}
+
+function updateCoverPreview(wrapper, src) {
+  if (!wrapper) return;
+  const img = wrapper.querySelector('[data-role="cover-preview-img"]');
+  const hint = wrapper.querySelector('[data-role="cover-empty-hint"]');
+  if (!img) return;
+  if (src) {
+    img.src = src;
+    img.hidden = false;
+    if (hint) hint.hidden = true;
+  } else {
+    img.src = '';
+    if (hint) hint.hidden = false;
+  }
+}
+
+function handleCoverClear(triggerBtn) {
+  const wrapper = triggerBtn.closest('.cover-field');
+  if (!wrapper) return;
+  const fileInput = wrapper.querySelector('[data-action="cover-file"]');
+  const urlInput = wrapper.querySelector('[data-action="cover-url"]');
+  const meta = wrapper.querySelector('[data-role="cover-file-meta"]');
+  if (fileInput) fileInput.value = '';
+  if (urlInput) urlInput.value = '';
+  if (meta) meta.textContent = 'Sin archivo · max 1 MB · jpg, png, webp';
+  updateCoverPreview(wrapper, '');
 }
 
 function handleCsvExport() {

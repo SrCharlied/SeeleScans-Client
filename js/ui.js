@@ -976,13 +976,7 @@ export function renderFormView({ manga, tags, mode }) {
           { value: 'hiatus', label: 'En pausa' },
         ],
       }),
-      formField({
-        name: 'cover_url',
-        label: 'Cover URL',
-        type: 'url',
-        value: m.cover_url || '',
-        placeholder: 'https://…',
-      }),
+      coverField({ value: m.cover_url || '' }),
       formField({
         name: 'author',
         label: 'Autor',
@@ -1110,6 +1104,97 @@ function formSelect({ name, label, required, value, options } = {}) {
       ...options.map((opt) =>
         el('option', { value: opt.value, selected: opt.value === value }, opt.label),
       ),
+    ),
+  );
+}
+
+function coverField({ value = '' } = {}) {
+  const initialUrl = value || '';
+  const previewImg = el('img', {
+    src: initialUrl || FALLBACK_COVER,
+    alt: 'Preview de la portada',
+    'data-role': 'cover-preview-img',
+  });
+  if (initialUrl) attachImageFallback(previewImg, FALLBACK_COVER);
+
+  const preview = el(
+    'div',
+    { class: 'cover-preview', 'data-role': 'cover-preview' },
+    previewImg,
+    el('span', { class: 'cover-preview__hint', 'data-role': 'cover-empty-hint', hidden: !!initialUrl }, 'Sin imagen'),
+  );
+
+  const fileInput = el('input', {
+    id: 'f-cover-file',
+    name: 'cover_file',
+    type: 'file',
+    accept: 'image/jpeg,image/png,image/webp',
+    'data-action': 'cover-file',
+    hidden: true,
+  });
+
+  const fileButton = el(
+    'label',
+    { class: 'btn btn--ghost btn--sm cover-file-btn', for: 'f-cover-file' },
+    el('span', { 'aria-hidden': 'true' }, '⬆'),
+    'Subir archivo',
+  );
+
+  const fileMeta = el(
+    'span',
+    { class: 'cover-file-meta', 'data-role': 'cover-file-meta' },
+    'Sin archivo · max 1 MB · jpg, png, webp',
+  );
+
+  const urlInput = el('input', {
+    id: 'f-cover_url',
+    name: 'cover_url',
+    type: 'url',
+    class: 'input',
+    value: initialUrl,
+    placeholder: 'https://… (opcional si subís archivo)',
+    'data-action': 'cover-url',
+    autocomplete: 'off',
+  });
+
+  const clearBtn = el(
+    'button',
+    { type: 'button', class: 'btn btn--ghost btn--sm', 'data-action': 'cover-clear' },
+    'Quitar imagen',
+  );
+
+  return el(
+    'div',
+    { class: 'field form-grid__full cover-field' },
+    el('span', { class: 'field__label' }, 'Portada'),
+    el(
+      'div',
+      { class: 'cover-field__inner' },
+      preview,
+      el(
+        'div',
+        { class: 'cover-field__controls' },
+        el(
+          'div',
+          { class: 'cover-field__row' },
+          fileInput,
+          fileButton,
+          fileMeta,
+        ),
+        el('div', { class: 'cover-field__divider' }, el('span', {}, 'o')),
+        el(
+          'label',
+          { class: 'field', for: 'f-cover_url' },
+          el('span', { class: 'field__label' }, 'Pegar URL externa'),
+          urlInput,
+        ),
+        el('div', { class: 'cover-field__actions' }, clearBtn),
+      ),
+    ),
+    el(
+      'span',
+      { class: 'field__hint' },
+      'Si subís archivo, se guarda en el servidor y reemplaza la URL al guardar.',
     ),
   );
 }
