@@ -885,19 +885,18 @@ a:hover {
 .rating-display__stars {
   display: inline-flex;
   gap: 1px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   letter-spacing: 0.04em;
-  color: #FFB800;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .rating-display__star {
-  opacity: 0.35;
-  transition: opacity var(--duration-fast) var(--ease);
+  color: #D1D5DB;
+  transition: color var(--duration-fast) var(--ease);
 }
 
 .rating-display__star.is-on {
-  opacity: 1;
+  color: #FFB800;
 }
 
 .rating-display__meta {
@@ -1026,33 +1025,39 @@ a:hover {
 .rate-star {
   font-size: 2.4rem;
   line-height: 1;
-  color: var(--border-strong);
+  color: #CBD5E1;
   background: none;
   border: 0;
-  padding: 0.1rem 0.2rem;
+  padding: 0.1rem 0.25rem;
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease), text-shadow var(--duration-fast) var(--ease);
+  transition:
+    transform var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease),
+    text-shadow var(--duration-fast) var(--ease);
 }
 
-.rate-star:hover,
-.rate-star:focus-visible {
-  transform: scale(1.18) rotate(-4deg);
+/* persistent state: user already rated → gold up to mine */
+.rate-star.is-on {
   color: #FFB800;
-  text-shadow: 0 0 18px rgba(255, 184, 0, 0.6);
-  outline: none;
 }
 
-/* on hover, fill all preceding stars (CSS-only preview) */
+/* hovering anywhere in the row → all stars gold... */
 .rate-stars:hover .rate-star {
   color: #FFB800;
 }
 
+/* ...except siblings AFTER the hovered one revert to grey (preview "fill from left") */
 .rate-stars .rate-star:hover ~ .rate-star {
-  color: var(--border-strong);
+  color: #CBD5E1;
 }
 
-.rate-star.is-on {
+/* dramatize the actually-hovered star */
+.rate-star:hover,
+.rate-star:focus-visible {
+  transform: scale(1.22) rotate(-6deg);
   color: #FFB800;
+  text-shadow: 0 0 18px rgba(255, 184, 0, 0.65);
+  outline: none;
 }
 
 .rating-block__mine {
