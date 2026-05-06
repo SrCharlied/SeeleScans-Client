@@ -100,6 +100,147 @@ function tagPill(tag) {
   return el('span', { class: 'tag-pill', dataset: { tagSlug: tag.slug || '' } }, tag?.name || '—');
 }
 
+// ---- Star rating components ----
+const STAR_FILLED = '★';
+const STAR_EMPTY = '☆';
+
+export function ratingDisplay(avg, count, { compact = false } = {}) {
+  const value = Number(avg) || 0;
+  const safeCount = Number(count) || 0;
+
+  // 5 stars: filled if value >= i+0.5
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(
+      el(
+        'span',
+        { class: `rating-display__star ${value >= i - 0.25 ? 'is-on' : ''}`, 'aria-hidden': 'true' },
+        value >= i - 0.25 ? STAR_FILLED : STAR_EMPTY,
+      ),
+    );
+  }
+
+  return el(
+    'span',
+    {
+      class: `rating-display ${compact ? 'rating-display--compact' : ''} ${safeCount === 0 ? 'rating-display--empty' : ''}`,
+      'aria-label': safeCount === 0 ? 'Sin votos' : `${value.toFixed(1)} de 5, ${safeCount} votos`,
+    },
+    el('span', { class: 'rating-display__stars' }, ...stars),
+    safeCount > 0
+      ? el(
+          'span',
+          { class: 'rating-display__meta' },
+          el('span', { class: 'rating-display__avg' }, value.toFixed(1)),
+          el('span', { class: 'rating-display__count' }, `(${safeCount})`),
+        )
+      : el('span', { class: 'rating-display__meta rating-display__meta--empty' }, 'Sin votos'),
+  );
+}
+
+export function ratingInteractive(stats, { mangaId } = {}) {
+  const mine = stats?.mine ?? null;
+  const avg = Number(stats?.avg) || 0;
+  const count = Number(stats?.count) || 0;
+  const dist = stats?.distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+  const buttons = [];
+  for (let i = 1; i <= 5; i++) {
+    buttons.push(
+      el(
+        'button',
+        {
+          type: 'button',
+          class: `rate-star ${mine && mine >= i ? 'is-on' : ''}`,
+          'aria-label': `${i} ${i === 1 ? 'estrella' : 'estrellas'}`,
+          dataset: { action: 'rate', value: i, mangaId },
+        },
+        STAR_FILLED,
+      ),
+    );
+  }
+
+  // distribution rows from 5 down to 1
+  const distRows = [5, 4, 3, 2, 1].map((v) => {
+    const c = dist[v] || 0;
+    const pct = count > 0 ? (c / count) * 100 : 0;
+    return el(
+      'div',
+      { class: 'rating-dist__row' },
+      el('span', { class: 'rating-dist__label' }, `${v}★`),
+      el(
+        'span',
+        { class: 'rating-dist__bar' },
+        el('span', { class: 'rating-dist__fill', style: `width: ${pct}%` }),
+      ),
+      el('span', { class: 'rating-dist__count' }, String(c)),
+    );
+  });
+
+  return el(
+    'section',
+    { class: 'rating-block', 'aria-label': 'Calificar este manga' },
+    el(
+      'header',
+      { class: 'rating-block__header' },
+      el('h2', { class: 'section-title' }, 'Tu rating'),
+    ),
+    el(
+      'div',
+      { class: 'rating-block__inner' },
+      el(
+        'div',
+        { class: 'rating-block__big' },
+        el(
+          'div',
+          { class: 'rating-block__avg' },
+          el('span', { class: 'rating-block__avg-num' }, count > 0 ? avg.toFixed(1) : '—'),
+          el('span', { class: 'rating-block__avg-max' }, '/5'),
+        ),
+        el(
+          'p',
+          { class: 'rating-block__count' },
+          count > 0
+            ? `${count} ${count === 1 ? 'voto' : 'votos'}`
+            : 'Sé el primero en calificar',
+        ),
+      ),
+      el(
+        'div',
+        { class: 'rating-block__interaction' },
+        el(
+          'div',
+          { class: 'rate-stars', dataset: { mangaId } },
+          ...buttons,
+        ),
+        el(
+          'p',
+          { class: 'rating-block__mine' },
+          mine
+            ? el(
+                'span',
+                {},
+                'Tu nota: ',
+                el('strong', {}, `${mine}★`),
+                ' · ',
+                el(
+                  'button',
+                  { type: 'button', class: 'link-btn', dataset: { action: 'rate-clear', mangaId } },
+                  'quitar',
+                ),
+              )
+            : 'Aún no calificaste. Tocá una estrella.',
+        ),
+      ),
+      el(
+        'div',
+        { class: 'rating-dist' },
+        ...distRows,
+      ),
+    ),
+  );
+}
+
 function emptyState({ icon = 'シ', title = 'Sin resultados', text = '' } = {}) {
   return el(
     'div',
@@ -141,6 +282,7 @@ function mangaCard(manga, { adminMode } = {}) {
     { class: 'manga-card__body' },
     el('h3', { class: 'manga-card__title' }, manga.title || 'Sin título'),
     manga.author ? el('p', { class: 'manga-card__author' }, manga.author) : null,
+    ratingDisplay(manga.rating_avg, manga.rating_count, { compact: true }),
     el(
       'div',
       { class: 'manga-card__meta' },
@@ -583,7 +725,7 @@ function renderPagination(meta) {
 }
 
 // ---------- Detail ----------
-export function renderDetailView({ manga, chapters, chaptersWithPages, adminMode, error }) {
+export function renderDetailView({ manga, chapters, chaptersWithPages, adminMode, ratingStats, error }) {
   const view = qs('#view-detail');
   if (!view) return;
   clear(view);
@@ -675,6 +817,13 @@ export function renderDetailView({ manga, chapters, chaptersWithPages, adminMode
   );
 
   view.appendChild(el('div', { class: 'detail' }, cover, content));
+
+  // rating section (always rendered; pre-fills with placeholder while ratingStats loads)
+  view.appendChild(
+    ratingInteractive(ratingStats || { avg: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, mine: null }, {
+      mangaId: manga.id,
+    }),
+  );
 
   // chapters section
   const chaptersSection = el('section', { class: 'chapters' });

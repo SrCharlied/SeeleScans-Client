@@ -25,6 +25,21 @@ import {
 
 // ---------- State ----------
 const ADMIN_KEY = 'seele.admin';
+const CLIENT_ID_KEY = 'seele.clientId';
+
+function getClientId() {
+  try {
+    let id = localStorage.getItem(CLIENT_ID_KEY);
+    if (!id) {
+      id = (crypto.randomUUID && crypto.randomUUID()) ||
+        `c-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(CLIENT_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return `anon-${Date.now()}`;
+  }
+}
 
 const state = {
   filters: {
@@ -159,9 +174,11 @@ async function loadHome() {
 async function loadDetail(id) {
   showLoading();
   try {
-    const [manga, chapters] = await Promise.all([
+    const clientId = getClientId();
+    const [manga, chapters, ratingStats] = await Promise.all([
       api.getManga(id),
       api.getChapters(id).catch(() => []),
+      api.getRating(id, clientId).catch(() => null),
     ]);
     state.currentManga = manga;
     state.currentChapters = Array.isArray(chapters) ? chapters : [];
@@ -171,11 +188,28 @@ async function loadDetail(id) {
       chapters: state.currentChapters,
       chaptersWithPages: new Set([...state.chaptersWithPages]),
       adminMode: state.adminMode,
+      ratingStats,
     });
   } catch (err) {
     renderDetailView({ error: err.message || 'No se pudo cargar el manga.' });
   } finally {
     hideLoading();
+  }
+}
+
+async function refreshDetailRating(mangaId) {
+  try {
+    const clientId = getClientId();
+    const ratingStats = await api.getRating(mangaId, clientId);
+    renderDetailView({
+      manga: state.currentManga,
+      chapters: state.currentChapters,
+      chaptersWithPages: new Set([...state.chaptersWithPages]),
+      adminMode: state.adminMode,
+      ratingStats,
+    });
+  } catch (err) {
+    showToast(err.message || 'No se pudo refrescar el rating.', 'error');
   }
 }
 
@@ -363,6 +397,47 @@ async function onMainClick(e) {
       e.preventDefault();
       handleCoverClear(target);
       break;
+    case 'rate':
+      e.preventDefault();
+      e.stopPropagation();
+      await handleRate(target.dataset.mangaId, parseInt(target.dataset.value, 10));
+      break;
+    case 'rate-clear':
+      e.preventDefault();
+      e.stopPropagation();
+      await handleRateClear(target.dataset.mangaId);
+      break;
+  }
+}
+
+async function handleRate(mangaId, value) {
+  if (!mangaId || !value || value < 1 || value > 5) return;
+  try {
+    const clientId = getClientId();
+    await api.submitRating(mangaId, clientId, value);
+    showToast(`¡Gracias! Calificado con ${value}★.`, 'success');
+    await refreshDetailRating(mangaId);
+  } catch (err) {
+    showToast(err.message || 'No se pudo enviar tu calificación.', 'error');
+  }
+}
+
+async function handleRateClear(mangaId) {
+  if (!mangaId) return;
+  const ok = await confirmDialog({
+    title: 'Quitar tu rating',
+    message: '¿Querés quitar tu calificación de este manga?',
+    confirmText: 'Quitar',
+    cancelText: 'Cancelar',
+  });
+  if (!ok) return;
+  try {
+    const clientId = getClientId();
+    await api.deleteRating(mangaId, clientId);
+    showToast('Rating eliminado.', 'info');
+    await refreshDetailRating(mangaId);
+  } catch (err) {
+    showToast(err.message || 'No se pudo quitar el rating.', 'error');
   }
 }
 
