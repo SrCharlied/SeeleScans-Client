@@ -3,7 +3,36 @@
 // HTTP client for the SeeleScans API.
 // =========================================================
 
-export const BASE_URL = 'http://localhost:3000';
+/**
+ * Decide a qué API hablamos según dónde se sirve el cliente.
+ *
+ * Orden de precedencia:
+ *  1. `window.SEELE_API_URL` (override runtime, ej. para staging desde la consola)
+ *  2. Match exacto en KNOWN_HOSTS (deploys conocidos)
+ *  3. localhost / 127.0.0.1 → http://localhost:3000 (dev)
+ *  4. Fallback genérico: mismo protocolo, prepend "api." al hostname
+ */
+const KNOWN_HOSTS = {
+  'seelescans.servigtdev.com': 'https://api.seele.servigtdev.com',
+};
+
+function detectBaseUrl() {
+  if (typeof window === 'undefined') return 'http://localhost:3000';
+
+  if (window.SEELE_API_URL) return window.SEELE_API_URL;
+
+  const { hostname, protocol } = window.location;
+
+  if (KNOWN_HOSTS[hostname]) return KNOWN_HOSTS[hostname];
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
+    return 'http://localhost:3000';
+  }
+
+  return `${protocol}//api.${hostname}`;
+}
+
+export const BASE_URL = detectBaseUrl();
 
 /**
  * Wrapper around fetch that:
