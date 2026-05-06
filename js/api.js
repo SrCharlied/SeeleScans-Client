@@ -103,6 +103,24 @@ export const uploadCover = (file) => {
   return apiFetch('/upload/cover', { method: 'POST', body: fd });
 };
 
+// ---- Ratings ----
+export const getRating = (mangaId, clientId, { signal } = {}) => {
+  const qs = clientId ? `?client_id=${encodeURIComponent(clientId)}` : '';
+  return apiFetch(`/manga/${encodeURIComponent(mangaId)}/rating${qs}`, { signal });
+};
+
+export const submitRating = (mangaId, clientId, value) =>
+  apiFetch(`/manga/${encodeURIComponent(mangaId)}/rating`, {
+    method: 'POST',
+    body: { client_id: clientId, value },
+  });
+
+export const deleteRating = (mangaId, clientId) =>
+  apiFetch(
+    `/manga/${encodeURIComponent(mangaId)}/rating?client_id=${encodeURIComponent(clientId)}`,
+    { method: 'DELETE' },
+  );
+
 export const api = {
   getMangas,
   getManga,
@@ -114,4 +132,7 @@ export const api = {
   getPages,
   getTags,
   uploadCover,
+  getRating,
+  submitRating,
+  deleteRating,
 };
